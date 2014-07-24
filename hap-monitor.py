@@ -22,6 +22,8 @@ from pystatsd import Client
 __config = ConfigParser.ConfigParser()
 __config.read('hap-monitor.cfg')
 
+metric_cache = {}
+
 def load_proxy_settings():
     proxies =  {}
     for proxy in __config.items('haproxies'):
@@ -53,24 +55,41 @@ def main():
             sleep_intervall = 1
         while True:
             for proxy in proxies:
-		print 'Checking instance: %s' % proxy
-                try:
-                    stats = get_stats(proxies[proxy])
-                    headers = stats[0].split(',')
-                    num_cols = len(headers)
-                    for stat in stats[1:-1]:
-                        stat = stat.split(',')
-                        prefix = '%s.%s' % (stat[0], stat[1])
-                        pos = 2
-                        while pos < num_cols:
-                            # If required, check if col is in list of interesting cols
-                            if stat[pos].isdigit():
-                                pystatsd_client.gauge(prefix+'.'+headers[pos], float(stat[pos]))
-                            pos += 1
-                except Exception as a:
-		    print traceback.format_exc(e)
+                try:  # General purpose try-exectp to enusre execution
+                    try:  # If GET requests for HAProxy stats fails e.g. proxy down
+                        stats = get_stats(proxies[proxy])
+                    except urllib2.URLError as e:
+                        print 'Failed requesting stats %s' % proxies[proxy]['url'] 
+                        print proxies[proxy]
+                        reset_gauage_values(proxy, pystatsd_client)
+                        continue
+                    stats = parse_stats(stats, proxy)
+                    for metric in stats:
+                        pystatsd_client.gauge(metric, stats[metric])
+                except Exception as e:
+                    print traceback.format_exc(e)
                     continue
+                print 'Reported stats from  %s' % proxy
             time.sleep(sleep_interval)
-    
+
+def parse_stats(raw_stats, proxy):
+    parsed_stats = {}
+    headers = raw_stats.pop(0).split(',')[2:-1]  # Get the column headers and remove pxname and svname
+    for stat in raw_stats[0:-1]:  # Parse each line, except the last one as it is empty
+        stat = stat.split(',')
+        prefix = '%s.%s.%s' % (proxy, stat.pop(0), stat.pop(0)) # Build metric prefix using pxname and svname
+        for column in range(len(headers)):
+            metric_cache[prefix+'.'+headers[column]] = None
+            if stat[column].isdigit():
+                parsed_stats[prefix+'.'+headers[column]] = float(stat[column])
+            elif stat[column] == '':
+                parsed_stats[prefix+'.'+headers[column]] = 0.0
+    return parsed_stats
+
+def reset_gauage_values(proxy, pystatsd_client):
+    for metric in metric_cache:
+        if metric.startswith(proxy):
+            pystatsd_client.gauge(metric, 0.0)
+
 
 if __name__ == "__main__":  main()
