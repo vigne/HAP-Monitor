@@ -16,6 +16,7 @@ interval = 5  # polling intervak
 user = username
 pwd = password
 url = http://your-haproxy.server.you:port/haproxy?stats;csv;norefresh  # The URI to request the stats via HTTP
+socket = /var/run/haproxy_admin.sock
 
 
 [carbon]

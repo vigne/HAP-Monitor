@@ -15,6 +15,7 @@ import urllib2
 import base64
 import time
 import traceback
+import socket
 
 
 from pystatsd import Client
@@ -34,11 +35,29 @@ def load_proxy_settings():
             settings[s[0]] = s[1]
     return proxies
 
-def get_stats(settings):
+def get_stats_http(settings):
     request = urllib2.Request(settings['url'])
     base64string = base64.encodestring('%s:%s' % (settings['user'], settings['pwd'])).replace('\n', '')
     request.add_header("Authorization", "Basic %s" % base64string)   
-    return urllib2.urlopen(request).read().split('\n')
+    return urllib2.urlopen(request ).read().split('\n')
+
+def get_stats_socket(settings):
+    # show stats
+    s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    s.connect(settings['socket'])
+    s.send('show stat\n')
+    ret = s.recv(2048)
+    s.close()
+    return ret.split('\n')
+
+def get_info_socket(settings):
+    # show stats
+    s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    s.connect(settings['socket'])
+    s.send('show info\n')
+    ret = s.recv(2048)
+    s.close()
+    return ret
 
 def connect_node_js():
     server = __config.get('carbon', 'carbon_server')
@@ -56,13 +75,25 @@ def main():
         while True:
             for proxy in proxies:
                 try:  # General purpose try-exectp to enusre execution
-                    try:  # If GET requests for HAProxy stats fails e.g. proxy down
-                        stats = get_stats(proxies[proxy])
-                    except urllib2.URLError as e:
-                        print 'Failed requesting stats %s' % proxies[proxy]['url'] 
-                        print proxies[proxy]
-                        reset_gauage_values(proxy, pystatsd_client)
-                        continue
+                    if 'socket' in proxies[proxy]:
+                        try:  # If GET requests for HAProxy stats fails e.g. proxy down
+                            stats = get_stats_socket(proxies[proxy])
+                            info = parse_info(get_info_socket(proxies[proxy]), proxy)
+                            for metric in info:
+                                pystatsd_client.gauge(metric, info[metric])
+                        except urllib2.URLError as e:
+                            print 'Failed requesting stats %s' % proxies[proxy]['url'] 
+                            print proxies[proxy]
+                            reset_gauage_values(proxy, pystatsd_client)
+                            continue
+                    else:
+                        try:  # If GET requests for HAProxy stats fails e.g. proxy down
+                            stats = get_stats_http(proxies[proxy])
+                        except urllib2.URLError as e:
+                            print 'Failed requesting stats %s' % proxies[proxy]['url'] 
+                            print proxies[proxy]
+                            reset_gauage_values(proxy, pystatsd_client)
+                            continue
                     stats = parse_stats(stats, proxy)
                     for metric in stats:
                         pystatsd_client.gauge(metric, stats[metric])
@@ -79,12 +110,21 @@ def parse_stats(raw_stats, proxy):
         stat = stat.split(',')
         prefix = '%s.%s.%s' % (proxy, stat.pop(0), stat.pop(0)) # Build metric prefix using pxname and svname
         for column in range(len(headers)):
-            metric_cache[prefix+'.'+headers[column]] = None
-            if stat[column].isdigit():
+            try:
                 parsed_stats[prefix+'.'+headers[column]] = float(stat[column])
-            elif stat[column] == '':
+            except:
                 parsed_stats[prefix+'.'+headers[column]] = 0.0
     return parsed_stats
+
+def parse_info(raw_info, proxy):
+    ret = {}
+    for l in raw_info.split('\n'):
+        str = l.split(': ')
+        try:
+            ret[proxy+'.'+str[0]] = float(str[1])
+        except:
+            pass
+    return ret
 
 def reset_gauage_values(proxy, pystatsd_client):
     for metric in metric_cache:
