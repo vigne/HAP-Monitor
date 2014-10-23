@@ -108,6 +108,8 @@ def parse_stats(raw_stats, proxy):
     headers = raw_stats.pop(0).split(',')[2:-1]  # Get the column headers and remove pxname and svname
     for stat in raw_stats[0:-1]:  # Parse each line, except the last one as it is empty
         stat = stat.split(',')
+        if len(stat) != 2 or stat[0] == '':
+            continue
         prefix = '%s.%s.%s' % (proxy, stat.pop(0), stat.pop(0)) # Build metric prefix using pxname and svname
         for column in range(len(headers)):
             try:
