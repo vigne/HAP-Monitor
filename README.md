@@ -2,6 +2,9 @@ HAP-Monitor
 ===========
 
 Requests HAProxy statistics and reports them to a Graphite/NodeJS backend.
+This version of the script is intedend to be executed as a cronjob.
+
+A script doing the same, but runs as a daemon was created by P. Roberts and can be found here: https://github.com/phillipbroberts/HAP-Monitor
 
 # Purpose
 
@@ -16,7 +19,7 @@ Installation instructions are given in according README.md file.
 
 The script is configured solely by CLI argumets.
 
-    usage: hap-monitor.py [-h] [--backend B] [--sockets S [S ...]] [--verbose]
+    usage: hap-monitor-cron.py [-h] [--backend B] [--sockets S [S ...]] [--verbose]
 
     optional arguments:
       -h, --help           show this help message and exit
