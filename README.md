@@ -1,7 +1,7 @@
 HAP-Monitor
 ===========
 
-Poll several HAProxy instances and reports them to Graphite/Node.js
+Requests HAProxy statistics and reports them to a Graphite/NodeJS backend.
 
 # Purpose
 
@@ -14,12 +14,21 @@ Installation instructions are given in according README.md file.
 
 # Configuration
 
-1. Copy hap-monitor.cfg.template to hap-monitor.cfg
-2. In the cfg file: list every HAProxy instance you want to monitor e.g. demo_proxy and set the polling interval (seconds) to your likings.
-3. Define a separate section for each instance listed in 2) and set up URI and user credentials. TIP: verifiy if the provided URI works in your browser (note the csv;norefresh query arguments in example URI). If you see CSV data after the basic authentication you're good to go. 
-4. Enter URI, port and userscope of your Graphite instance in the carbon section of the config file
+The script is configured solely by CLI argumets.
 
-Start hap-monitor.py and data should be reported to Garphit now. Please note that values are provided as gauge values, resulting missleading data if for example a nodes is down. Maybe I'll address this issue in a future version, but for now it just like that.
+    usage: hap-monitor.py [-h] [--backend B] [--sockets S [S ...]] [--verbose]
+
+    optional arguments:
+      -h, --help           show this help message and exit
+      --backend B          Graphite server URL[:port][::scope] to which the script will report to. E.g. --backend graphite.host:8025::my.system.stats.haproxy
+      --sockets S [S ...]  a list of socket files e.g. /var/run/haproxy_admin_process_no_1.sock
+      --verbose            makes it chatty
+
+To execute it in the desired interval define a cronjob on the host running HAProxy. For example, we want collect data with one minute intervall:
+
+    */1 * * * * python /usr/local/bin/hap-monitor.py --backend graphite.host:8025::my.system.stats.haproxy --sockets /var/run/haproxy_admin_process_no_1.sock /var/run/haproxy_admin_process_no_2.sock
+
+Also note, that the example above assumes HAProxy running two processes reproting iwhich conequently report into two distinct sockets.
 
 # License
 Copyright European Organization for Nuclear Research (CERN)
