@@ -30,7 +30,7 @@ The script is configured solely by CLI argumets.
 
 To execute it in the desired interval define a cronjob on the host running HAProxy. For example, we want collect data with one minute intervall:
 
-    */1 * * * * python /usr/local/bin/hap-monitor.py --backend graphite.host:8025::my.system.stats.haproxy --sockets /var/run/haproxy_admin_process_no_1.sock /var/run/haproxy_admin_process_no_2.sock
+    */1 * * * * python /usr/local/bin/hap-monitor.py --backend graphite.host:8025::my.system.stats.haproxy --type G --sockets /var/run/haproxy_admin_process_no_1.sock /var/run/haproxy_admin_process_no_2.sock
 
 Also note, that the example above assumes HAProxy running two processes reproting iwhich conequently report into two distinct sockets.
 
