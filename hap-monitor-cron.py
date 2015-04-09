@@ -14,6 +14,7 @@ import socket
 import traceback
 import logging
 import sys
+import time
 
 from pystatsd import Client
 from sys import stdout
@@ -97,9 +98,31 @@ def backend_graphite(url, stats, prefix):
     logger.debug('Reporting to prefix: %s' % prefix)
     server, port = url.split(':')
     try:
-        pystatsd_client = Client(host=server, port=port, prefix=prefix)
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     except Exception, e:
         logger.error('Unable to connect to Graphite backend %s: %s' % (url, e))
+        raise
+
+    for s in stats:
+        try:
+            sock.sendto('%s.%s %s %s\n' % (prefix, s, float(stats[s]), time.time()), (server, int(port)))
+            logger.debug('Message: %s.%s %s %s\n' % (prefix, s, float(stats[s]), time.time()))
+        except Exception as e:
+            logger.error('Failed reporting %s.%s %s %s\n' % (prefix, s, float(stats[s]), time.time()))
+            logger.error(traceback.format_exc(e))
+
+
+def backend_statsd(url, stats, prefix):
+    process_num = stats['Process_num']
+    del(stats['Process_num'])
+    server_name = socket.getfqdn().split('.')[0]
+    prefix = '%s.%s.%s' % (prefix, server_name, int(process_num))
+    logger.debug('Reporting to prefix: %s' % prefix)
+    server, port = url.split(':')
+    try:
+        pystatsd_client = Client(host=server, port=port, prefix=prefix)
+    except Exception, e:
+        logger.error('Unable to connect to statsd backend %s: %s' % (url, e))
         raise
 
     for s in stats:
@@ -109,9 +132,11 @@ def backend_graphite(url, stats, prefix):
         except Exception as e:
             logger.error('Failed reporting %s (%s): %s' % (s, stats[s], e))
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--backend', metavar='B', type=str, nargs=1,  help=' Graphite server URL[:port][::scope] to which the script will report to. E.g. --backend rucio-graphite-int.cern.ch:8025/listen/now::rucio.loadbalancer')
+    parser.add_argument('--backend', metavar='B', type=str, nargs=1,  help='Backend server URL[:port][::scope] to which the script will report to. E.g. --backend my.graphite.host:8025/listen/now::rucio.loadbalancer')
+    parser.add_argument('--type', metavar='T', type=str, nargs=1,  help='Type of the backend server. Supported values are: G (Graphite) and S (statsd)')
     parser.add_argument('--sockets', metavar='S', type=str, nargs='+',  help='a list of socket files e.g. /var/run/haproxy_admin_process_no_1.sock')
     parser.add_argument('--verbose', help='makes it chatty', action="store_true")
 
@@ -126,11 +151,14 @@ if __name__ == "__main__":
     if args.backend is None:
         print 'No backend information provided. Run --help for further information.'
         sys.exit(1)
+    print args
+    type = 'g' if ((args.type is not None) and (args.type[0].lower() == 'g')) else 's'  # If not Graphite, statsd is used
+
     args = vars(args)
 
     try:
         url, prefix = args['backend'][0].split('::')
-        logger.debug('Reporting to backend => URL: %s\tPrefix: %s' % (url, prefix))
+        logger.debug('Reporting to backend (type: %s) => URL: %s\tPrefix: %s' % (type, url, prefix))
     except ValueError:
         logger.critical('Can not unpack backend information: %s' % args['backend'][0])
         sys.exit(1)
@@ -138,7 +166,10 @@ if __name__ == "__main__":
     for socket_name in args['sockets']:
         try:
             data = monitor_haproxy(socket_name)
-            backend_graphite(url, data, prefix)
+            if type == 'g':        
+                backend_graphite(url, data, prefix)
+            else:
+                backend_statsd(url, data, prefix)
         except Exception as e:
             logger.error(e)
             sys.exit(1)

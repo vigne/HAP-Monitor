@@ -24,6 +24,7 @@ The script is configured solely by CLI argumets.
     optional arguments:
       -h, --help           show this help message and exit
       --backend B          Graphite server URL[:port][::scope] to which the script will report to. E.g. --backend graphite.host:8025::my.system.stats.haproxy
+      --type T             Type of the backend server. Supported values are: G (Graphite) and S (statsd)
       --sockets S [S ...]  a list of socket files e.g. /var/run/haproxy_admin_process_no_1.sock
       --verbose            makes it chatty
 
