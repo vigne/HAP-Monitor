@@ -105,8 +105,8 @@ def backend_graphite(url, stats, prefix):
 
     for s in stats:
         try:
-            sock.sendto('%s.%s %s %s\n' % (prefix, s, float(stats[s]), time.time()), (server, int(port)))
-            logger.debug('Message: %s.%s %s %s\n' % (prefix, s, float(stats[s]), time.time()))
+            sock.sendto('%s.%s %s %s\n' % (prefix, s, float(stats[s]), int(time.time())), (server, int(port)))
+            logger.debug('Message: %s.%s %s %s\n' % (prefix, s, float(stats[s]), int(time.time())))
         except Exception as e:
             logger.error('Failed reporting %s.%s %s %s\n' % (prefix, s, float(stats[s]), time.time()))
             logger.error(traceback.format_exc(e))
