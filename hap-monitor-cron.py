@@ -85,7 +85,7 @@ def monitor_haproxy(socket_name):
                     else:
                         data[prefix+'.'+headers[column]] = float(stat[column])
             except Exception as e:
-                logger.warning('Igonring data: %s -> %s' % (headers[column], stat[column]))
+                logger.warning('Ignoring data: %s -> %s' % (headers[column], stat[column]))
     logger.debug('Done parsing stat response.')
     return data
 
@@ -166,7 +166,7 @@ if __name__ == "__main__":
     for socket_name in args['sockets']:
         try:
             data = monitor_haproxy(socket_name)
-            if type == 'g':        
+            if type == 'g':
                 backend_graphite(url, data, prefix)
             else:
                 backend_statsd(url, data, prefix)
