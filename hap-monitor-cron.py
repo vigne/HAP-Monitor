@@ -16,7 +16,6 @@ import logging
 import sys
 import time
 
-from pystatsd import Client
 from sys import stdout
 
 # Define logger
@@ -113,6 +112,7 @@ def backend_graphite(url, stats, prefix):
 
 
 def backend_statsd(url, stats, prefix):
+    from pystatsd import Client
     process_num = stats['Process_num']
     del(stats['Process_num'])
     server_name = socket.getfqdn().split('.')[0]
