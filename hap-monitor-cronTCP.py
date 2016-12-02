@@ -96,9 +96,9 @@ def backend_graphite(url, stats, prefix):
     prefix = '%s.%s.%s' % (prefix, server_name, int(process_num))
     logger.debug('Reporting to prefix: %s' % prefix)
     server, port = url.split(':')
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.connect((server, int(port))
+        sock.connect((server, int(port)))
     except Exception, e:
         logger.error('Unable to connect to Graphite backend %s: %s' % (url, e))
         raise
