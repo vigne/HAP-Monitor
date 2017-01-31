@@ -5,9 +5,11 @@
 # You may not use this file except in compliance with the License.
 # You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 #
+#
 # Authors:
 # - Ralph Vigne <ralph.vigne@cern.ch>, 2014
-
+# - Alex Typaldos, 2016
+#   This was modified from the original hap-monitor-cron.py by above author to send Stats to Graphite via TCP instead of UDP
 
 import argparse
 import socket

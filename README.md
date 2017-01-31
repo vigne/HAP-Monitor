@@ -6,6 +6,10 @@ This version of the script is intedend to be executed as a cronjob.
 
 A script doing the same, but runs as a daemon was created by P. Roberts and can be found here: https://github.com/phillipbroberts/HAP-Monitor
 
+# TCP vs UDP to Graphite Backend
+
+There are two Python scripts in this repo, hap-monitor-cron.py and hap-monitor-cronTCP.py.  The first uses UDP to send stats to Graphite.  The second uses TCP to send stats to Graphite.
+
 # Purpose
 
 A simple Python script requesting the statistics of several HAProxies (http://www.haproxy.org/) and reports them into Graphite (http://graphite.wikidot.com/).
@@ -40,3 +44,5 @@ Copyright European Organization for Nuclear Research (CERN)
 Licensed under the Apache License, Version 2.0 (the "License");
 You may not use this file except in compliance with the License.
 You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+
+Modified from forked repo to add script which sends stats via TCP to Graphite.
