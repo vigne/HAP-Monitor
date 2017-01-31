@@ -6,7 +6,7 @@ This version of the script is intedend to be executed as a cronjob.
 
 A script doing the same, but runs as a daemon was created by P. Roberts and can be found here: https://github.com/phillipbroberts/HAP-Monitor
 
-# TCP vs UDP to Graphite Backend
+# TCP vs UDP to Graphite
 
 There are two Python scripts in this repo, hap-monitor-cron.py and hap-monitor-cronTCP.py.  The first uses UDP to send stats to Graphite.  The second uses TCP to send stats to Graphite.
 
